@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+<title>Rohit Mishra 3D House Simulator</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,sans-serif;user-select:none}
+body{overflow:hidden;background:#0f172a;color:#f8fafc;touch-action:none}
+#wrap{width:100vw;height:100vh}
+.top{position:fixed;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;gap:6px;pointer-events:none;z-index:20}
+.info{pointer-events:auto;background:rgba(15,23,42,.85);border:1px solid #334155;border-radius:10px;padding:6px 10px;max-width:230px}
+.info h1{font-size:12px;color:#38bdf8}.info p{font-size:9.5px;color:#cbd5e1;margin-top:2px}
+.tbtns{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;pointer-events:auto}
+.btn{background:rgba(15,23,42,.9);color:#f1f5f9;border:1px solid #475569;padding:6px 9px;border-radius:9px;font-size:10.5px;font-weight:700;cursor:pointer}
+.btn.on{background:#0284c7;border-color:#7dd3fc}.btn.gold{border-color:#f59e0b;color:#fde68a}
+#toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:#0284c7;color:#fff;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:700;z-index:30;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1}
+/* Virtual Thumb Joystick (Bottom Left) */
+#joy-zone{position:fixed;bottom:18px;left:18px;width:112px;height:112px;border-radius:50%;background:rgba(15,23,42,.55);border:2px solid rgba(56,189,248,.6);z-index:25;touch-action:none}
+#joy-knob{position:absolute;left:36px;top:36px;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle,#38bdf8,#0284c7);box-shadow:0 0 12px #38bdf8;pointer-events:none}
+/* Action Buttons (Bottom Right) */
+.acts{position:fixed;bottom:16px;right:12px;display:flex;flex-direction:column;gap:6px;z-index:25;align-items:flex-end}
+.act-row{display:flex;gap:6px}
+.abtn{background:rgba(15,23,42,.9);border:1.5px solid #38bdf8;color:#fff;padding:8px 11px;border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.4)}
+.abtn.warn{border-color:#f59e0b;color:#fde68a}.abtn.red{border-color:#ef4444;color:#fecaca}
+/* Switchboard Drawer */
+#drawer{position:fixed;top:52px;right:8px;width:270px;max-height:66vh;overflow-y:auto;background:rgba(15,23,42,.95);border:1px solid #38bdf8;border-radius:12px;padding:10px;z-index:35;display:none}
+#drawer.open{display:block}
+.sec{font-size:10px;font-weight:800;color:#38bdf8;margin:7px 0 4px;text-transform:uppercase}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.sw{background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:6px;border-radius:7px;font-size:10px;font-weight:600;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.sw .d{width:7px;height:7px;border-radius:50%;background:#475569}
+.sw.on{background:#0f2942;border-color:#38bdf8;color:#fff}.sw.on .d{background:#22c55e;box-shadow:0 0 6px #22c55e}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="info">
+    <h1>ROHIT MISHRA — 3D HOUSE</h1>
+    <p id="loc-txt">📍 Grand Hall • Drag screen to look 360°</p>
+  </div>
+  <div class="tbtns">
+    <button class="btn gold" onclick="toggleDrawer()">🔌 Switchboard</button>
+    <button class="btn" id="b-night" onclick="toggleNight()">🌙 Night</button>
+    <button class="btn on" id="b-roof" onclick="toggleRoof()">🧱 Cutaway</button>
+  </div>
+</div>
+<div id="toast">Welcome Rohit Mishra!</div>
+<div id="wrap"></div>
+
+<!-- Switchboard Drawer -->
+<div id="drawer">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <strong style="font-size:12px;color:#fde68a">⚡ MASTER SWITCHBOARD</strong>
+    <button class="btn" onclick="toggleDrawer()">✖</button>
+  </div>
+  <div class="sec">🌀 Ceiling Fans (Try Bed 1 Fan!)</div>
+  <div class="grid">
+    <button class="sw on" id="sw-f1" onclick="tog('fan1')"><span>Bed1 Mausa</span><span class="d"></span></button>
+    <button class="sw on" id="sw-f2" onclick="tog('fan2')"><span>Bed2 Sanjana</span><span class="d"></span></button>
+    <button class="sw on" id="sw-f3" onclick="tog('fan3')"><span>Bed3 Krishna</span><span class="d"></span></button>
+    <button class="sw on" id="sw-fh" onclick="tog('fanH')"><span>Hall Fans</span><span class="d"></span></button>
+  </div>
+  <div class="sec">💡 Room Lights</div>
+  <div class="grid">
+    <button class="sw on" id="sw-lh" onclick="tog('lHall')"><span>Hall + Jaal</span><span class="d"></span></button>
+    <button class="sw on" id="sw-l1" onclick="tog('lB1')"><span>Bed 1 Light</span><span class="d"></span></button>
+    <button class="sw on" id="sw-l2" onclick="tog('lB2')"><span>Bed 2 Light</span><span class="d"></span></button>
+    <button class="sw on" id="sw-l3" onclick="tog('lB3')"><span>Bed 3 Light</span><span class="d"></span></button>
+    <button class="sw on" id="sw-lk" onclick="tog('lKit')"><span>Kitchen</span><span class="d"></span></button>
+    <button class="sw on" id="sw-lb" onclick="tog('lBath')"><span>SW Bath/WC</span><span class="d"></span></button>
+  </div>
+  <div class="sec">🚪 Doors, Windows & Appliances</div>
+  <div class="grid">
+    <button class="sw" id="sw-bf" onclick="tog('bifold')"><span>9' Bi-Fold</span><span class="d"></span></button>
+    <button class="sw" id="sw-dr" onclick="tog('allDoors')"><span>Room Doors</span><span class="d"></span></button>
+    <button class="sw" id="sw-wn" onclick="tog('windows')"><span>Windows</span><span class="d"></span></button>
+    <button class="sw" id="sw-wm" onclick="tog('wmRun')"><span>Washing M.</span><span class="d"></span></button>
+    <button class="sw" id="sw-sh" onclick="tog('shower')"><span>Bath Shower</span><span class="d"></span></button>
+    <button class="sw on" id="sw-tb" onclick="tog('tablets')"><span>Study Tabs</span><span class="d"></span></button>
+  </div>
+</div>
+
+<!-- Virtual Joystick -->
+<div id="joy-zone"><div id="joy-knob"></div></div>
+
+<!-- Quick Context Actions -->
+<div class="acts">
+  <div class="act-row">
+    <button class="abtn warn" id="b-car" onclick="toggleCar()">🚗 Drive Car</button>
+    <button class="abtn" id="b-horn" onclick="honkHorn()" style="display:none">📢 Horn</button>
+  </div>
+  <div class="act-row">
+    <button class="abtn" onclick="doSitWC()">🚽 Sit WC</button>
+    <button class="abtn" onclick="doFlush()">🌊 Flush</button>
+  </div>
+  <div class="act-row">
+    <button class="abtn" onclick="doEat()">🍽️ Eat/Chai</button>
+    <button class="abtn" onclick="doNearestDoor()">🚪 Door</button>
+  </div>
+</div>
+
+<script src="house.js"></script>
+<script src="chars.js"></script>
+<script src="game.js"></script>
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+window.startHouseGame(THREE, OrbitControls);
+</script>
+</body>
+</html>
